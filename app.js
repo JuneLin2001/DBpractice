@@ -50,6 +50,24 @@ async function getUserByEmail(email) {
   }
 }
 
+// Function to get user data by ID
+async function getUserById(userId) {
+  try {
+    const userDoc = doc(db, 'users', userId);
+    const userSnapshot = await getDoc(userDoc);
+
+    if (userSnapshot.exists()) {
+      return userSnapshot.data();
+    } else {
+      console.error("User not found for ID:", userId);
+      return null;
+    }
+  } catch (error) {
+    console.error("Error fetching user by ID:", error);
+    return null;
+  }
+}
+
 // Create a function to generate HTML for a list item
 function createListItem(data, user) {
   const listItem = document.createElement("li");
@@ -62,8 +80,8 @@ function createListItem(data, user) {
     <p class="content">內容: ${data.content}</p>
     <p class="createdTime">創建時間: ${createdTime}</p>
     <p class="tag">${data.tag}</p>
-    <p class="userEmail">使用者 Email: ${user.email}</p>
-    <p class="userName">使用者名字: ${user.name}</p>
+    <p class="userEmail">${user ? '使用者 Email: ' + user.email : '使用者 Email: 缺失'}</p>
+    <p class="userName">${user ? '使用者名字: ' + user.name : '使用者名字: 缺失'}</p>
   `;
   return listItem;
 }
@@ -72,15 +90,16 @@ function createListItem(data, user) {
 async function updateUI(data) {
   const dataList = document.getElementById("dataList");
 
-  // Get user data based on author_id
-  const user = await getUserByEmail(data.author_id);
+  // 嘗試根據 email 查找用戶資料
+  let user = await getUserByEmail(data.author_id);
 
-  if (user) {
-    const listItem = createListItem(data, user);
-    dataList.appendChild(listItem);
-  } else {
-    console.error("User data not found for ID:", data.author_id);
+  // 如果用戶資料缺失，根據 ID 查找
+  if (!user) {
+    user = await getUserById(data.author_id);
   }
+
+  const listItem = createListItem(data, user);
+  dataList.appendChild(listItem);
 }
 
 // Function to update current user info display
