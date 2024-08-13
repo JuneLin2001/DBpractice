@@ -36,24 +36,11 @@ function generateCustomId() {
   return uuidv4();
 }
 
-// Function to get user data by ID
-async function getUserById(userId) {
-  const userDoc = doc(db, 'users', userId);
-  const userSnapshot = await getDoc(userDoc);
-  
-  if (userSnapshot.exists()) {
-    return userSnapshot.data();
-  } else {
-    console.error("User not found");
-    return null;
-  }
-}
-
 // Function to get user data by email
-async function getUserByEmail(userEmail) {
-  const q = query(collection(db, 'users'), where('email', '==', userEmail));
+async function getUserByEmail(email) {
+  const q = query(collection(db, 'users'), where('email', '==', email));
   const querySnapshot = await getDocs(q);
-  
+
   if (!querySnapshot.empty) {
     const userDoc = querySnapshot.docs[0];
     return { id: userDoc.id, ...userDoc.data() };
@@ -61,20 +48,6 @@ async function getUserByEmail(userEmail) {
     console.error("User not found");
     return null;
   }
-}
-
-// Function to update UI with current user information
-function updateCurrentUserInfo(user) {
-  document.getElementById('currentUserEmail').textContent = `Email: ${user.email}`;
-  document.getElementById('currentUserId').textContent = `ID: ${user.id}`;
-  document.getElementById('currentUserName').textContent = `Name: ${user.name}`;
-}
-
-// Function to update UI with searched user information
-function updateSearchedUserInfo(user) {
-  document.getElementById('searchUserEmail').textContent = `Email: ${user.email}`;
-  document.getElementById('searchUserId').textContent = `ID: ${user.id}`;
-  document.getElementById('searchUserName').textContent = `Name: ${user.name}`;
 }
 
 // Create a function to generate HTML for a list item
@@ -100,7 +73,7 @@ async function updateUI(data) {
   const dataList = document.getElementById("dataList");
 
   // Get user data based on author_id
-  const user = await getUserById(data.author_id);
+  const user = await getUserByEmail(data.author_id);
 
   if (user) {
     const listItem = createListItem(data, user);
@@ -110,14 +83,44 @@ async function updateUI(data) {
   }
 }
 
-// Function to load data based on the user email
+// Function to update current user info display
+function updateCurrentUserInfo(user) {
+  const emailElement = document.getElementById('currentUserEmail');
+  const idElement = document.getElementById('currentUserId');
+  const nameElement = document.getElementById('currentUserName');
+
+  if (emailElement && idElement && nameElement) {
+    emailElement.textContent = `Email: ${user.email}`;
+    idElement.textContent = `ID: ${user.id}`;
+    nameElement.textContent = `Name: ${user.name}`;
+  } else {
+    console.error("One or more current user info elements not found.");
+  }
+}
+
+// Function to update searched user info display
+function updateSearchedUserInfo(user) {
+  const emailElement = document.getElementById('searchUserEmail');
+  const idElement = document.getElementById('searchUserId');
+  const nameElement = document.getElementById('searchUserName');
+
+  if (emailElement && idElement && nameElement) {
+    emailElement.textContent = `Email: ${user.email}`;
+    idElement.textContent = `ID: ${user.id}`;
+    nameElement.textContent = `Name: ${user.name}`;
+  } else {
+    console.error("One or more searched user info elements not found.");
+  }
+}
+
+// Function to load data from Firestore based on user email
 async function loadDataByEmail(userEmail) {
   const user = await getUserByEmail(userEmail);
   
   if (user) {
-    // Update the searched user info on the page
-    updateSearchedUserInfo(user);
-    
+    // Update current user info on the page
+    updateCurrentUserInfo(user);
+
     const q = query(collection(db, 'posts'), where('author_id', '==', user.id));
     const querySnapshot = await getDocs(q);
     const dataList = document.getElementById('dataList');
@@ -129,7 +132,7 @@ async function loadDataByEmail(userEmail) {
     });
   } else {
     alert("No posts found for this email.");
-    updateSearchedUserInfo({ email: "", id: "", name: "" }); // Clear user info
+    updateSearchedUserInfo({ email: '', id: '', name: '' }); // Clear user info
   }
 }
 
@@ -153,9 +156,38 @@ async function loadAllData(tag = 'all') {
   });
 }
 
+// Function to send a friend request
+async function sendFriendRequest(toUserId) {
+  const fromUserId = localStorage.getItem('currentUserId');
+  const fromUserEmail = localStorage.getItem('currentUserEmail');
+  const fromUserName = localStorage.getItem('currentUserName');
+
+  if (!fromUserId) {
+    alert("Please log in to send friend requests.");
+    return;
+  }
+
+  const friendRequestId = generateCustomId();
+  const friendRequestRef = doc(db, 'users', toUserId, 'friendRequests', friendRequestId);
+
+  try {
+    await setDoc(friendRequestRef, {
+      fromUserId: fromUserId,
+      fromUserEmail: fromUserEmail,
+      fromUserName: fromUserName,
+      createdAt: serverTimestamp(),
+      status: 'pending'  // Initial status of the friend request
+    });
+    alert("Friend request sent!");
+  } catch (e) {
+    console.error("Error sending friend request: ", e);
+    alert("Failed to send friend request.");
+  }
+}
+
 // Function to handle login form submission
 document.getElementById('loginForm').addEventListener('submit', async (event) => {
-  event.preventDefault(); 
+  event.preventDefault();
 
   const email = document.getElementById('loginEmail').value;
   const name = document.getElementById('loginName').value;
@@ -164,83 +196,63 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
     let user = await getUserByEmail(email);
 
     if (!user) {
+      // If user doesn't exist, create a new user
       const userId = generateCustomId();
+      await setDoc(doc(db, 'users', userId), {
+        id: userId,
+        email: email,
+        name: name
+      });
       user = { id: userId, email: email, name: name };
-      await setDoc(doc(db, 'users', userId), user);
-    } else {
-      user.name = name; // Update name if it already exists
-      await setDoc(doc(db, 'users', user.id), user);
     }
 
-    // Store user info in localStorage
-    localStorage.setItem('currentUser', JSON.stringify(user));
+    // Save user info to localStorage
+    localStorage.setItem('currentUserEmail', user.email);
+    localStorage.setItem('currentUserId', user.id);
+    localStorage.setItem('currentUserName', user.name);
+
     // Update current user info on the page
     updateCurrentUserInfo(user);
-
-    alert("登入成功！");
   } catch (e) {
-    console.error("Error logging in: ", e);
-    alert("登入失敗！");
+    console.error("Error during login: ", e);
+    alert("Login failed!");
   }
 });
 
-// Form submission handler for adding new documents
-document.getElementById('dataForm').addEventListener('submit', async (event) => {
-  event.preventDefault(); 
-
-  const title = document.getElementById('title').value;
-  const content = document.getElementById('content').value;
-  const tag = document.getElementById('tag').value;
-  const currentUserEmail = document.getElementById('currentUserEmail').textContent.replace('Email: ', '').trim();
-
-  try {
-    const user = await getUserByEmail(currentUserEmail);
-    if (!user) {
-      alert("請先登入！");
-      return;
-    }
-
-    const customId = generateCustomId();
-    const docRef = doc(db, "posts", customId);
-    await setDoc(docRef, {
-      id: customId,
-      title: title,
-      content: content,
-      tag: tag,
-      author_id: user.id,
-      created_time: serverTimestamp()
-    });
-    console.log("Document written with ID: ", docRef.id);
-    alert("資料已送出！");
-    loadAllData();
-  } catch (e) {
-    console.error("Error adding document: ", e);
-    alert("資料送出失敗！");
-  }
-});
-
-// Radio button change event to filter data by tag
-document.querySelectorAll('input[name="tagFilter"]').forEach((radio) => {
-  radio.addEventListener('change', (event) => {
-    const selectedTag = event.target.value;
-    loadAllData(selectedTag);
-  });
-});
-
-// Search button click handler to search user by email
+// Function to handle search user button click
 document.getElementById('searchUserButton').addEventListener('click', async () => {
   const searchEmail = document.getElementById('searchEmail').value;
-  await loadDataByEmail(searchEmail);
+  const user = await getUserByEmail(searchEmail);
+
+  if (user) {
+    updateSearchedUserInfo(user);
+    document.getElementById('sendFriendRequestButton').style.display = 'block'; // Show button
+  } else {
+    alert("User not found.");
+    updateSearchedUserInfo({ email: '', id: '', name: '' });
+    document.getElementById('sendFriendRequestButton').style.display = 'none'; // Hide button
+  }
+});
+
+// Function to handle friend request button click
+document.getElementById('sendFriendRequestButton').addEventListener('click', async () => {
+  const userId = document.getElementById('searchUserId').textContent.split(': ')[1];
+
+  if (userId) {
+    await sendFriendRequest(userId);
+  } else {
+    alert("No user selected.");
+  }
 });
 
 // Load all data when the page is loaded
 window.addEventListener('load', () => {
-  // Check if user info is available in localStorage
-  const currentUser = JSON.parse(localStorage.getItem('currentUser'));
-  if (currentUser) {
-    updateCurrentUserInfo(currentUser);
+  const email = localStorage.getItem('currentUserEmail');
+  if (email) {
+    loadDataByEmail(email);
+  } else {
+    loadAllData();
   }
-  loadAllData();
 });
 
 // Real-time updates for all posts
