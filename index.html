@@ -1,71 +1,95 @@
 <!DOCTYPE html>
 <html lang="zh-TW">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Firebase Firestore 示例</title>
-    <link rel="stylesheet" href="/styles.css" />
-  </head>
-  <body>
-    <h1>Firebase Firestore 示例</h1>
-    <div class="flex">
-      <form id="dataForm">
-        <label for="title">標題</label>
-        <input type="text" id="title" name="title" required />
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Firebase Firestore 示例</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <h1>Firebase Firestore 示例</h1>
 
-        <label for="content">內容</label>
-        <textarea id="content" name="content" required></textarea>
+  <!-- Login Section -->
+  <div class="flex">
+    <h2>登入</h2>
+    <form id="loginForm">
+      <label for="loginEmail">Email</label>
+      <input type="email" id="loginEmail" name="loginEmail" required />
+      
+      <label for="loginName">名字</label>
+      <input type="text" id="loginName" name="loginName" required />
+      
+      <button type="submit">登入</button>
+    </form>
+  </div>
 
-        <label for="tag">標籤</label>
-        <select id="tag" name="tag" required>
-          <option value="Beauty">Beauty</option>
-          <option value="Gossiping">Gossiping</option>
-          <option value="SchoolLife">SchoolLife</option>
-        </select>
+  <!-- User Info Display -->
+  <div class="flex">
+    <h2>當前用戶資訊</h2>
+    <p id="currentUserEmail">Email: </p>
+    <p id="currentUserId">ID: </p>
+    <p id="currentUserName">Name: </p>
+  </div>
 
-        <label for="userEmail">Email</label>
-        <input type="email" id="userEmail" name="userEmail" required />
+  <!-- Search User by Email -->
+  <div class="flex">
+    <h2>搜尋用戶</h2>
+    <label for="searchEmail">輸入Email以搜尋用戶</label>
+    <input type="email" id="searchEmail" name="searchEmail" />
+    <button id="searchUserButton">搜尋用戶</button>
+  </div>
 
-        <label for="userName">名字</label>
-        <input type="text" id="userName" name="userName" required />
+  <!-- User Info for Search Results -->
+  <div class="flex">
+    <h2>搜尋結果用戶資訊</h2>
+    <p id="searchUserEmail">Email: </p>
+    <p id="searchUserId">ID: </p>
+    <p id="searchUserName">Name: </p>
+  </div>
 
-        <button type="submit">送出</button>
-      </form>
+  <!-- Data Form -->
+  <div class="flex">
+    <form id="dataForm">
+      <label for="title">標題</label>
+      <input type="text" id="title" name="title" required />
+      
+      <label for="content">內容</label>
+      <textarea id="content" name="content" required></textarea>
+
+      <label for="tag">標籤</label>
+      <select id="tag" name="tag" required>
+        <option value="Beauty">Beauty</option>
+        <option value="Gossiping">Gossiping</option>
+        <option value="SchoolLife">SchoolLife</option>
+      </select>
+      
+      <button type="submit">送出</button>
+    </form>
+  </div>
+
+  <!-- Article Search and Display -->
+  <div class="flex">
+    <h2>搜尋文章</h2>
+    <h3>選擇標籤</h3>
+    <div class="radio-group">
+      <label>
+        <input type="radio" name="tagFilter" value="all" checked /> 所有
+      </label>
+      <label>
+        <input type="radio" name="tagFilter" value="Beauty" /> Beauty
+      </label>
+      <label>
+        <input type="radio" name="tagFilter" value="Gossiping" /> Gossiping
+      </label>
+      <label>
+        <input type="radio" name="tagFilter" value="SchoolLife" /> SchoolLife
+      </label>
     </div>
 
-    <div class="flex">
-      <h2>用戶資訊</h2>
-      <label for="searchEmail">輸入Email以搜尋用戶</label>
-      <input type="email" id="searchEmail" name="searchEmail" />
-      <button id="searchUserButton">搜尋用戶</button>
-    
-      <p id="userEmailDisplay">Email: </p>
-      <p id="userIdDisplay">ID: </p>
-      <p id="userNameDisplay">Name: </p>
-    </div>
+    <h2>文章一覽</h2>
+    <ul id="dataList"></ul>
+  </div>
 
-    <div class="flex">
-      <h2>搜尋文章</h2>
-      <h3>選擇標籤</h3>
-      <div class="radio-group">
-        <label>
-          <input type="radio" name="tagFilter" value="all" checked /> 所有
-        </label>
-        <label>
-          <input type="radio" name="tagFilter" value="Beauty" /> Beauty
-        </label>
-        <label>
-          <input type="radio" name="tagFilter" value="Gossiping" /> Gossiping
-        </label>
-        <label>
-          <input type="radio" name="tagFilter" value="SchoolLife" /> SchoolLife
-        </label>
-      </div>
-
-      <h2>文章一覽</h2>
-      <ul id="dataList"></ul>
-    </div>
-
-    <script type="module" src="app.js" defer></script>
-  </body>
+  <script type="module" src="app.js" defer></script>
+</body>
 </html>

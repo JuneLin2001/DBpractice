@@ -49,6 +49,34 @@ async function getUserById(userId) {
   }
 }
 
+// Function to get user data by email
+async function getUserByEmail(userEmail) {
+  const q = query(collection(db, 'users'), where('email', '==', userEmail));
+  const querySnapshot = await getDocs(q);
+  
+  if (!querySnapshot.empty) {
+    const userDoc = querySnapshot.docs[0];
+    return { id: userDoc.id, ...userDoc.data() };
+  } else {
+    console.error("User not found");
+    return null;
+  }
+}
+
+// Function to update UI with current user information
+function updateCurrentUserInfo(user) {
+  document.getElementById('currentUserEmail').textContent = `Email: ${user.email}`;
+  document.getElementById('currentUserId').textContent = `ID: ${user.id}`;
+  document.getElementById('currentUserName').textContent = `Name: ${user.name}`;
+}
+
+// Function to update UI with searched user information
+function updateSearchedUserInfo(user) {
+  document.getElementById('searchUserEmail').textContent = `Email: ${user.email}`;
+  document.getElementById('searchUserId').textContent = `ID: ${user.id}`;
+  document.getElementById('searchUserName').textContent = `Name: ${user.name}`;
+}
+
 // Create a function to generate HTML for a list item
 function createListItem(data, user) {
   const listItem = document.createElement("li");
@@ -82,28 +110,14 @@ async function updateUI(data) {
   }
 }
 
-// Function to check if a user exists based on email and return their ID
-async function getUserId(userEmail) {
-  const q = query(collection(db, 'users'), where('email', '==', userEmail));
-  const querySnapshot = await getDocs(q);
-
-  if (!querySnapshot.empty) {
-    const userDoc = querySnapshot.docs[0];
-    return { id: userDoc.id, ...userDoc.data() };
-  } else {
-    console.error("User not found");
-    return null;
-  }
-}
-
-// Function to load data from Firestore based on user email
+// Function to load data based on the user email
 async function loadDataByEmail(userEmail) {
-  const user = await getUserId(userEmail);
+  const user = await getUserByEmail(userEmail);
   
   if (user) {
-    // Update user info on the page
-    updateUserInfo(user.email, user.id, user.name);
-
+    // Update the searched user info on the page
+    updateSearchedUserInfo(user);
+    
     const q = query(collection(db, 'posts'), where('author_id', '==', user.id));
     const querySnapshot = await getDocs(q);
     const dataList = document.getElementById('dataList');
@@ -115,7 +129,7 @@ async function loadDataByEmail(userEmail) {
     });
   } else {
     alert("No posts found for this email.");
-    updateUserInfo("", "", ""); // Clear user info
+    updateSearchedUserInfo({ email: "", id: "", name: "" }); // Clear user info
   }
 }
 
@@ -139,20 +153,36 @@ async function loadAllData(tag = 'all') {
   });
 }
 
-// Function to update user info display
-function updateUserInfo(email, id, name) {
-  const emailElement = document.getElementById('userEmailDisplay');
-  const idElement = document.getElementById('userIdDisplay');
-  const nameElement = document.getElementById('userNameDisplay');
+// Function to handle login form submission
+document.getElementById('loginForm').addEventListener('submit', async (event) => {
+  event.preventDefault(); 
 
-  if (emailElement && idElement && nameElement) {
-    emailElement.textContent = `Email: ${email}`;
-    idElement.textContent = `ID: ${id}`;
-    nameElement.textContent = `Name: ${name}`;
-  } else {
-    console.error("One or more user info elements not found.");
+  const email = document.getElementById('loginEmail').value;
+  const name = document.getElementById('loginName').value;
+
+  try {
+    let user = await getUserByEmail(email);
+
+    if (!user) {
+      const userId = generateCustomId();
+      user = { id: userId, email: email, name: name };
+      await setDoc(doc(db, 'users', userId), user);
+    } else {
+      user.name = name; // Update name if it already exists
+      await setDoc(doc(db, 'users', user.id), user);
+    }
+
+    // Store user info in localStorage
+    localStorage.setItem('currentUser', JSON.stringify(user));
+    // Update current user info on the page
+    updateCurrentUserInfo(user);
+
+    alert("登入成功！");
+  } catch (e) {
+    console.error("Error logging in: ", e);
+    alert("登入失敗！");
   }
-}
+});
 
 // Form submission handler for adding new documents
 document.getElementById('dataForm').addEventListener('submit', async (event) => {
@@ -161,18 +191,13 @@ document.getElementById('dataForm').addEventListener('submit', async (event) => 
   const title = document.getElementById('title').value;
   const content = document.getElementById('content').value;
   const tag = document.getElementById('tag').value;
-  const userEmail = document.getElementById('userEmail').value;
-  const userName = document.getElementById('userName').value;
+  const currentUserEmail = document.getElementById('currentUserEmail').textContent.replace('Email: ', '').trim();
 
   try {
-    const user = await getUserId(userEmail);
-    let userId;
-
-    if (user) {
-      userId = user.id;
-    } else {
-      userId = generateCustomId();
-      await setDoc(doc(db, 'users', userId), { id: userId, email: userEmail, name: userName });
+    const user = await getUserByEmail(currentUserEmail);
+    if (!user) {
+      alert("請先登入！");
+      return;
     }
 
     const customId = generateCustomId();
@@ -182,7 +207,7 @@ document.getElementById('dataForm').addEventListener('submit', async (event) => 
       title: title,
       content: content,
       tag: tag,
-      author_id: userId,
+      author_id: user.id,
       created_time: serverTimestamp()
     });
     console.log("Document written with ID: ", docRef.id);
@@ -209,7 +234,14 @@ document.getElementById('searchUserButton').addEventListener('click', async () =
 });
 
 // Load all data when the page is loaded
-window.addEventListener('load', () => loadAllData());
+window.addEventListener('load', () => {
+  // Check if user info is available in localStorage
+  const currentUser = JSON.parse(localStorage.getItem('currentUser'));
+  if (currentUser) {
+    updateCurrentUserInfo(currentUser);
+  }
+  loadAllData();
+});
 
 // Real-time updates for all posts
 function listenToPosts() {
