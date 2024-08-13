@@ -9,7 +9,6 @@
   <body>
     <h1>Firebase Firestore 示例</h1>
     
-    <!-- 登入區塊 -->
     <div class="flex">
       <form id="loginForm">
         <label for="loginEmail">Email</label>
@@ -20,29 +19,44 @@
 
         <button type="submit">登入</button>
       </form>
+      <div class="flex">
+        <h2>當前用戶資訊</h2>
+        <p id="currentUserEmail">Email: </p>
+        <p id="currentUserId">ID: </p>
+        <p id="currentUserName">Name: </p>
+      </div>
     </div>
 
-    <!-- 當前用戶資訊 -->
-    <div class="flex">
-      <h2>當前用戶資訊</h2>
-      <p id="currentUserEmail">Email: </p>
-      <p id="currentUserId">ID: </p>
-      <p id="currentUserName">Name: </p>
-    </div>
-
-    <!-- 用戶搜尋區塊 -->
     <div class="flex">
       <h2>用戶資訊</h2>
       <label for="searchEmail">輸入Email以搜尋用戶</label>
       <input type="email" id="searchEmail" name="searchEmail" />
       <button id="searchUserButton">搜尋用戶</button>
-      
       <div id="searchedUserInfo">
         <p id="searchUserEmail">Email: </p>
         <p id="searchUserId">ID: </p>
         <p id="searchUserName">Name: </p>
         <button id="sendFriendRequestButton">發送好友請求</button>
       </div>
+    </div>
+
+    <div class="flex">
+      <form id="dataForm">
+        <label for="title">標題</label>
+        <input type="text" id="title" name="title" required />
+
+        <label for="content">內容</label>
+        <textarea id="content" name="content" required></textarea>
+
+        <label for="tag">標籤</label>
+        <select id="tag" name="tag" required>
+          <option value="Beauty">Beauty</option>
+          <option value="Gossiping">Gossiping</option>
+          <option value="SchoolLife">SchoolLife</option>
+        </select>
+
+        <button type="submit">送出</button>
+      </form>
     </div>
 
     <!-- 文章搜尋和顯示區塊 -->
@@ -64,24 +78,7 @@
         </label>
       </div>
 
-    <div class="flex">
-      <form id="dataForm">
-        <label for="title">標題</label>
-        <input type="text" id="title" name="title" required />
 
-        <label for="content">內容</label>
-        <textarea id="content" name="content" required></textarea>
-
-        <label for="tag">標籤</label>
-        <select id="tag" name="tag" required>
-          <option value="Beauty">Beauty</option>
-          <option value="Gossiping">Gossiping</option>
-          <option value="SchoolLife">SchoolLife</option>
-        </select>
-
-        <button type="submit">送出</button>
-      </form>
-    </div>
 
     <h2>文章一覽</h2>
     <ul id="dataList"></ul>
