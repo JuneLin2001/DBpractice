@@ -1,4 +1,4 @@
-// Import the functions you need from the SDKs you need
+import { v4 as uuidv4 } from 'https://unpkg.com/uuid@10.0.0/dist/esm-browser/index.js';
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-app.js";
 import {
   getFirestore,
@@ -30,13 +30,9 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 const db = getFirestore(app);
 
-// Generate a custom ID for documents
+// Function to generate a custom ID for documents
 function generateCustomId() {
-  const date = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const randomNum = Math.floor(Math.random() * 1000000)
-    .toString()
-    .padStart(6, "0");
-  return `${date}${randomNum}`;
+  return uuidv4();
 }
 
 // Create a function to generate HTML for a list item
@@ -49,7 +45,7 @@ function createListItem(data, createdTime) {
     <p class="content">內容: ${data.content}</p>
     <p class="createdTime">創建時間: ${createdTime}</p>
     <p class="tag">${data.tag}</p>
-    <p class="userID">ID: ${data.user_id}</p>
+    <p class="userID">使用者ID: ${data.user_id}</p>
     <p class="userEmail">Email: ${data.user_email}</p>
     <p class="userName">名字: ${data.user_name}</p>
   `;
@@ -59,16 +55,34 @@ function createListItem(data, createdTime) {
 // Update UI for newly added documents
 function updateUI(data) {
   console.log(data);
+
   const dataList = document.getElementById("dataList");
   const createdTime = data.created_time ? data.created_time.toDate().toLocaleString() : new Date().toLocaleString();
   const listItem = createListItem(data, createdTime);
   dataList.appendChild(listItem);
 }
 
-// Function to load data from Firestore and display it
-async function loadData(tag = null) {
+// Function to check if a user exists based on email and name, and return their UUID
+async function getUserUUID(userEmail, userName) {
+  const q = query(collection(db, 'users'), where('email', '==', userEmail), where('name', '==', userName));
+  const querySnapshot = await getDocs(q);
+
+  if (!querySnapshot.empty) {
+    return querySnapshot.docs[0].data().uuid;
+  } else {
+    const newUUID = generateCustomId();
+    await setDoc(doc(db, 'users', newUUID), { uuid: newUUID, email: userEmail, name: userName });
+    return newUUID;
+  }
+}
+
+// Function to load data from Firestore and display it based on tag or email
+async function loadData(tag = null, userEmail = null) {
   let q;
-  if (tag && tag !== 'all') {
+
+  if (userEmail) {
+    q = query(collection(db, 'posts'), where('user_email', '==', userEmail));
+  } else if (tag && tag !== 'all') {
     q = query(collection(db, 'posts'), where('tag', '==', tag));
   } else {
     q = query(collection(db, 'posts'));
@@ -91,11 +105,11 @@ document.getElementById('dataForm').addEventListener('submit', async (event) => 
   const title = document.getElementById('title').value;
   const content = document.getElementById('content').value;
   const tag = document.getElementById('tag').value;
-  const userID = document.getElementById('userID').value;
   const userEmail = document.getElementById('userEmail').value;
   const userName = document.getElementById('userName').value;
 
   try {
+    const userUUID = await getUserUUID(userEmail, userName);
     const customId = generateCustomId();
     const docRef = doc(db, "posts", customId);
     await setDoc(docRef, {
@@ -103,9 +117,9 @@ document.getElementById('dataForm').addEventListener('submit', async (event) => 
       title: title,
       content: content,
       tag: tag,
-      author_id: "William Lin",
+      author_id: userUUID,
       created_time: serverTimestamp(),
-      user_id: userID,
+      user_id: userUUID,
       user_email: userEmail,
       user_name: userName
     });
@@ -130,11 +144,17 @@ function listenToPost() {
   });
 }
 
-// Search form submission handler
+// Search form submission handler for searching by tag or email
 document.getElementById('searchForm').addEventListener('submit', async (event) => {
   event.preventDefault();  
-  const searchTag = document.getElementById('searchTag').value;
-  loadData(searchTag); // 根據選擇的標籤載入資料
+  const searchTag = document.querySelector('select[name="searchTag"]').value;
+  const userEmail = document.getElementById('searchEmail').value;
+
+  if (userEmail) {
+    loadData(null, userEmail);
+  } else {
+    loadData(searchTag);
+  }
 });
 
 // Load data when the page is loaded

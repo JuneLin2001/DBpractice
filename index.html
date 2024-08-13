@@ -12,39 +12,44 @@
       <form id="dataForm">
         <label for="title">標題</label>
         <input type="text" id="title" name="title" required />
-        
+
         <label for="content">內容</label>
         <textarea id="content" name="content" required></textarea>
-        
+
         <label for="tag">標籤</label>
         <select id="tag" name="tag" required>
           <option value="Beauty">Beauty</option>
           <option value="Gossiping">Gossiping</option>
           <option value="SchoolLife">SchoolLife</option>
         </select>
-        
-        <label for="userID">ID</label>
-        <input type="text" id="userID" name="userID" required />
-        
+
         <label for="userEmail">Email</label>
-        <input type="text" id="userEmail" name="userEmail" required />
-        
+        <input type="email" id="userEmail" name="userEmail" required />
+
         <label for="userName">名字</label>
         <input type="text" id="userName" name="userName" required />
-        
+
         <button type="submit">送出</button>
       </form>
+    </div>
+
+    <div class="flex">
       <h2>搜尋文章</h2>
       <form id="searchForm">
         <label for="searchTag">選擇標籤</label>
-        <select id="searchTag" name="searchTag" required>
+        <select id="searchTag" name="searchTag">
           <option value="all">所有</option>
           <option value="Beauty">Beauty</option>
           <option value="Gossiping">Gossiping</option>
           <option value="SchoolLife">SchoolLife</option>
         </select>
+    
+        <label for="searchEmail">或輸入Email</label>
+        <input type="email" id="searchEmail" name="searchEmail" />
+    
         <button type="submit">搜尋</button>
       </form>
+    
       <h2>文章一覽</h2>
       <ul id="dataList"></ul>
     </div>
