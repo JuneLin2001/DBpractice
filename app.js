@@ -5,6 +5,7 @@ import {
   collection,
   setDoc,
   getDocs,
+  getDoc,
   query,
   where,
   doc,
@@ -35,9 +36,24 @@ function generateCustomId() {
   return uuidv4();
 }
 
+// Function to get user data by ID
+async function getUserById(userId) {
+  const userDoc = doc(db, 'users', userId);
+  const userSnapshot = await getDoc(userDoc);
+  
+  if (userSnapshot.exists()) {
+    return userSnapshot.data();
+  } else {
+    console.error("User not found");
+    return null;
+  }
+}
+
 // Create a function to generate HTML for a list item
-function createListItem(data, createdTime) {
+function createListItem(data, user) {
   const listItem = document.createElement("li");
+  const createdTime = data.created_time ? data.created_time.toDate().toLocaleString() : new Date().toLocaleString();
+  
   listItem.innerHTML = `
     <p class="id">ID: ${data.id}</p>
     <p class="title">標題: ${data.title}</p>
@@ -45,57 +61,97 @@ function createListItem(data, createdTime) {
     <p class="content">內容: ${data.content}</p>
     <p class="createdTime">創建時間: ${createdTime}</p>
     <p class="tag">${data.tag}</p>
-    <p class="userID">使用者ID: ${data.user_id}</p>
-    <p class="userEmail">Email: ${data.user_email}</p>
-    <p class="userName">名字: ${data.user_name}</p>
+    <p class="userEmail">使用者 Email: ${user.email}</p>
+    <p class="userName">使用者名字: ${user.name}</p>
   `;
   return listItem;
 }
 
 // Update UI for newly added documents
-function updateUI(data) {
-  console.log(data);
-
+async function updateUI(data) {
   const dataList = document.getElementById("dataList");
-  const createdTime = data.created_time ? data.created_time.toDate().toLocaleString() : new Date().toLocaleString();
-  const listItem = createListItem(data, createdTime);
-  dataList.appendChild(listItem);
-}
 
-// Function to check if a user exists based on email and name, and return their UUID
-async function getUserUUID(userEmail, userName) {
-  const q = query(collection(db, 'users'), where('email', '==', userEmail), where('name', '==', userName));
-  const querySnapshot = await getDocs(q);
+  // Get user data based on author_id
+  const user = await getUserById(data.author_id);
 
-  if (!querySnapshot.empty) {
-    return querySnapshot.docs[0].data().uuid;
+  if (user) {
+    const listItem = createListItem(data, user);
+    dataList.appendChild(listItem);
   } else {
-    const newUUID = generateCustomId();
-    await setDoc(doc(db, 'users', newUUID), { uuid: newUUID, email: userEmail, name: userName });
-    return newUUID;
+    console.error("User data not found for ID:", data.author_id);
   }
 }
 
-// Function to load data from Firestore and display it based on tag or email
-async function loadData(tag = null, userEmail = null) {
+// Function to check if a user exists based on email and return their ID
+async function getUserId(userEmail) {
+  const q = query(collection(db, 'users'), where('email', '==', userEmail));
+  const querySnapshot = await getDocs(q);
+
+  if (!querySnapshot.empty) {
+    const userDoc = querySnapshot.docs[0];
+    return { id: userDoc.id, ...userDoc.data() };
+  } else {
+    console.error("User not found");
+    return null;
+  }
+}
+
+// Function to load data from Firestore based on user email
+async function loadDataByEmail(userEmail) {
+  const user = await getUserId(userEmail);
+  
+  if (user) {
+    // Update user info on the page
+    updateUserInfo(user.email, user.id, user.name);
+
+    const q = query(collection(db, 'posts'), where('author_id', '==', user.id));
+    const querySnapshot = await getDocs(q);
+    const dataList = document.getElementById('dataList');
+    dataList.innerHTML = ''; // Clear existing content
+
+    querySnapshot.forEach((doc) => {
+      const data = doc.data();
+      updateUI(data);
+    });
+  } else {
+    alert("No posts found for this email.");
+    updateUserInfo("", "", ""); // Clear user info
+  }
+}
+
+// Function to load all data from Firestore
+async function loadAllData(tag = 'all') {
   let q;
 
-  if (userEmail) {
-    q = query(collection(db, 'posts'), where('user_email', '==', userEmail));
-  } else if (tag && tag !== 'all') {
-    q = query(collection(db, 'posts'), where('tag', '==', tag));
-  } else {
+  if (tag === 'all') {
     q = query(collection(db, 'posts'));
+  } else {
+    q = query(collection(db, 'posts'), where('tag', '==', tag));
   }
 
   const querySnapshot = await getDocs(q);
   const dataList = document.getElementById('dataList');
-  dataList.innerHTML = ''; 
-  
+  dataList.innerHTML = ''; // Clear existing content
+
   querySnapshot.forEach((doc) => {
     const data = doc.data();
     updateUI(data);
   });
+}
+
+// Function to update user info display
+function updateUserInfo(email, id, name) {
+  const emailElement = document.getElementById('userEmailDisplay');
+  const idElement = document.getElementById('userIdDisplay');
+  const nameElement = document.getElementById('userNameDisplay');
+
+  if (emailElement && idElement && nameElement) {
+    emailElement.textContent = `Email: ${email}`;
+    idElement.textContent = `ID: ${id}`;
+    nameElement.textContent = `Name: ${name}`;
+  } else {
+    console.error("One or more user info elements not found.");
+  }
 }
 
 // Form submission handler for adding new documents
@@ -109,7 +165,16 @@ document.getElementById('dataForm').addEventListener('submit', async (event) => 
   const userName = document.getElementById('userName').value;
 
   try {
-    const userUUID = await getUserUUID(userEmail, userName);
+    const user = await getUserId(userEmail);
+    let userId;
+
+    if (user) {
+      userId = user.id;
+    } else {
+      userId = generateCustomId();
+      await setDoc(doc(db, 'users', userId), { id: userId, email: userEmail, name: userName });
+    }
+
     const customId = generateCustomId();
     const docRef = doc(db, "posts", customId);
     await setDoc(docRef, {
@@ -117,23 +182,37 @@ document.getElementById('dataForm').addEventListener('submit', async (event) => 
       title: title,
       content: content,
       tag: tag,
-      author_id: userUUID,
-      created_time: serverTimestamp(),
-      user_id: userUUID,
-      user_email: userEmail,
-      user_name: userName
+      author_id: userId,
+      created_time: serverTimestamp()
     });
     console.log("Document written with ID: ", docRef.id);
     alert("資料已送出！");
-    loadData();
+    loadAllData();
   } catch (e) {
     console.error("Error adding document: ", e);
     alert("資料送出失敗！");
   }
 });
 
-// Function to listen for real-time updates and log them
-function listenToPost() {
+// Radio button change event to filter data by tag
+document.querySelectorAll('input[name="tagFilter"]').forEach((radio) => {
+  radio.addEventListener('change', (event) => {
+    const selectedTag = event.target.value;
+    loadAllData(selectedTag);
+  });
+});
+
+// Search button click handler to search user by email
+document.getElementById('searchUserButton').addEventListener('click', async () => {
+  const searchEmail = document.getElementById('searchEmail').value;
+  await loadDataByEmail(searchEmail);
+});
+
+// Load all data when the page is loaded
+window.addEventListener('load', () => loadAllData());
+
+// Real-time updates for all posts
+function listenToPosts() {
   const postsCollection = collection(db, "posts");
   onSnapshot(postsCollection, (snapshot) => {
     snapshot.docChanges().forEach((change) => {
@@ -144,21 +223,5 @@ function listenToPost() {
   });
 }
 
-// Search form submission handler for searching by tag or email
-document.getElementById('searchForm').addEventListener('submit', async (event) => {
-  event.preventDefault();  
-  const searchTag = document.querySelector('select[name="searchTag"]').value;
-  const userEmail = document.getElementById('searchEmail').value;
-
-  if (userEmail) {
-    loadData(null, userEmail);
-  } else {
-    loadData(searchTag);
-  }
-});
-
-// Load data when the page is loaded
-window.addEventListener('load', () => loadData('all'));
-
 // Start listening to real-time updates
-listenToPost();
+listenToPosts();

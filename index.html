@@ -34,22 +34,34 @@
     </div>
 
     <div class="flex">
+      <h2>用戶資訊</h2>
+      <label for="searchEmail">輸入Email以搜尋用戶</label>
+      <input type="email" id="searchEmail" name="searchEmail" />
+      <button id="searchUserButton">搜尋用戶</button>
+    
+      <p id="userEmailDisplay">Email: </p>
+      <p id="userIdDisplay">ID: </p>
+      <p id="userNameDisplay">Name: </p>
+    </div>
+
+    <div class="flex">
       <h2>搜尋文章</h2>
-      <form id="searchForm">
-        <label for="searchTag">選擇標籤</label>
-        <select id="searchTag" name="searchTag">
-          <option value="all">所有</option>
-          <option value="Beauty">Beauty</option>
-          <option value="Gossiping">Gossiping</option>
-          <option value="SchoolLife">SchoolLife</option>
-        </select>
-    
-        <label for="searchEmail">或輸入Email</label>
-        <input type="email" id="searchEmail" name="searchEmail" />
-    
-        <button type="submit">搜尋</button>
-      </form>
-    
+      <h3>選擇標籤</h3>
+      <div class="radio-group">
+        <label>
+          <input type="radio" name="tagFilter" value="all" checked /> 所有
+        </label>
+        <label>
+          <input type="radio" name="tagFilter" value="Beauty" /> Beauty
+        </label>
+        <label>
+          <input type="radio" name="tagFilter" value="Gossiping" /> Gossiping
+        </label>
+        <label>
+          <input type="radio" name="tagFilter" value="SchoolLife" /> SchoolLife
+        </label>
+      </div>
+
       <h2>文章一覽</h2>
       <ul id="dataList"></ul>
     </div>
