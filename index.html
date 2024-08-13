@@ -8,7 +8,7 @@
   </head>
   <body>
     <h1>Firebase Firestore 示例</h1>
-    
+
     <div class="flex">
       <form id="loginForm">
         <label for="loginEmail">Email</label>
@@ -21,9 +21,13 @@
       </form>
       <div class="flex">
         <h2>當前用戶資訊</h2>
-        <p id="currentUserEmail">Email: </p>
-        <p id="currentUserId">ID: </p>
-        <p id="currentUserName">Name: </p>
+        <p id="currentUserEmail">Email:</p>
+        <p id="currentUserId">ID:</p>
+        <p id="currentUserName">Name:</p>
+        <div id="friendRequests">
+          <h2>收到的好友請求</h2>
+          <ul id="friendRequestsList"></ul>
+        </div>
       </div>
     </div>
 
@@ -33,9 +37,9 @@
       <input type="email" id="searchEmail" name="searchEmail" />
       <button id="searchUserButton">搜尋用戶</button>
       <div id="searchedUserInfo">
-        <p id="searchUserEmail">Email: </p>
-        <p id="searchUserId">ID: </p>
-        <p id="searchUserName">Name: </p>
+        <p id="searchUserEmail">Email:</p>
+        <p id="searchUserId">ID:</p>
+        <p id="searchUserName">Name:</p>
         <button id="sendFriendRequestButton">發送好友請求</button>
       </div>
     </div>
@@ -78,11 +82,9 @@
         </label>
       </div>
 
-
-
-    <h2>文章一覽</h2>
-    <ul id="dataList"></ul>
-  </div>
+      <h2>文章一覽</h2>
+      <ul id="dataList"></ul>
+    </div>
 
     <script type="module" src="app.js" defer></script>
   </body>

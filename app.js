@@ -204,6 +204,29 @@ async function sendFriendRequest(toUserId) {
   }
 }
 
+// Function to display received friend requests
+async function displayFriendRequests() {
+  const userId = localStorage.getItem('currentUserId');
+  if (!userId) return;
+
+  const friendRequestsCollection = collection(db, 'users', userId, 'friendRequests');
+  const querySnapshot = await getDocs(friendRequestsCollection);
+  const friendRequestsList = document.getElementById('friendRequestsList');
+  friendRequestsList.innerHTML = ''; // Clear existing content
+
+  querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    const listItem = document.createElement('li');
+    listItem.innerHTML = `
+      <p class="fromUserId">發送者 ID: ${data.fromUserId}</p>
+      <p class="fromUserEmail">發送者 Email: ${data.fromUserEmail}</p>
+      <p class="fromUserName">發送者名字: ${data.fromUserName}</p>
+      <p class="createdAt">請求時間: ${data.createdAt.toDate().toLocaleString()}</p>
+    `;
+    friendRequestsList.appendChild(listItem);
+  });
+}
+
 // Function to handle login form submission
 document.getElementById('loginForm').addEventListener('submit', async (event) => {
   event.preventDefault();
@@ -232,6 +255,7 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
 
     // Update current user info on the page
     updateCurrentUserInfo(user);
+    displayFriendRequests();  // Display friend requests after login
   } catch (e) {
     console.error("Error during login: ", e);
     alert("Login failed!");
@@ -269,6 +293,7 @@ window.addEventListener('load', () => {
   const email = localStorage.getItem('currentUserEmail');
   if (email) {
     loadDataByEmail(email);
+    displayFriendRequests();  // Display friend requests on page load if logged in
   } else {
     loadAllData();
   }
