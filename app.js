@@ -176,6 +176,7 @@ async function loadAllData(tag = 'all') {
   const querySnapshot = await getDocs(q);
   const dataList = document.getElementById('dataList');
   dataList.innerHTML = ''; // Clear existing content
+  document.getElementById('dataListTitle').textContent = "文章一覽";
 
   for (const doc of querySnapshot.docs) {
     const data = doc.data();
@@ -348,12 +349,11 @@ async function acceptFriendRequest(requestDocId, id, email, name) {
   }
 }
 
-// Function to display friend list
 async function displayFriendlist() {
-  const id = localStorage.getItem('currentUserId');
-  if (!id) return;
+  const userId = localStorage.getItem('currentUserId');
+  if (!userId) return;
 
-  const friendListCollection = collection(db, 'users', id, 'friendList');
+  const friendListCollection = collection(db, 'users', userId, 'friendList');
   const querySnapshot = await getDocs(friendListCollection);
   const friendLists = document.getElementById('friendLists');
   friendLists.innerHTML = ''; // Clear existing content
@@ -365,10 +365,40 @@ async function displayFriendlist() {
       <p class="friendId">好友 ID: ${data.id}</p>
       <p class="friendEmail">好友 Email: ${data.email}</p>
       <p class="friendName">好友名字: ${data.name}</p>
-    `;
+      <a href= #postlists>
+      <button type="button" class="viewButton" data-friend-name="${data.name}">查看好友全部文章</button>
+      </a>
+      `;
     friendLists.appendChild(listItem); // Append to friendLists
   });
+
+  // Add event listeners for "viewButton"
+  document.querySelectorAll('.viewButton').forEach(button => {
+    button.addEventListener('click', (event) => {
+      const friendName = event.target.getAttribute('data-friend-name');
+        document.getElementById('dataListTitle').textContent = `${friendName} 的文章一覽`;
+        loadPostsByFriendId(friendId); // Load and display friend's posts
+    });
+  });
 }
+
+async function loadPostsByFriendId(friendId) {
+  const postsCollection = collection(db, 'posts');
+  const q = query(postsCollection, where('author_id', '==', friendId));
+  const querySnapshot = await getDocs(q);
+  const dataList = document.getElementById('dataList');
+  dataList.innerHTML = ''; // Clear existing content
+
+  // Load user information
+  const user = await getUserById(friendId);
+
+  querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    const listItem = createListItem(data, user); // Pass user data to createListItem
+    dataList.appendChild(listItem); // Append to dataList
+  });
+}
+
 
 // Function to handle login form submission
 document.getElementById('loginForm').addEventListener('submit', async (event) => {

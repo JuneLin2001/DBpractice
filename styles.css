@@ -1,3 +1,11 @@
+html {   
+  scroll-behavior: smooth;   
+}   
+  
+:root {   
+  scroll-padding-top: 30px;   
+}   
+
 body {
   background-color: #f7f7f7;
   margin: 0;
@@ -87,6 +95,13 @@ ul li {
   margin-top: 20px;
 }
 
+#dataList > li {
+  margin-bottom: 10px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  padding: 10px;
+  border-radius: 8px;
+}
+
 .tag {
   color: var(--fgColor-accent, var(--color-accent-fg, #0969da));
   text-decoration: none;
@@ -103,12 +118,11 @@ ul li {
   white-space: nowrap;
 }
 
-/* 使整體容器使用 flex 布局並增加間距 */
 .radio-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px; /* 增加間距 */
-  margin: 20px 0; /* 上下間距 */
+  gap: 15px; 
+  margin: 20px 0; 
 }
 
 /* 設置 label 的顯示樣式和對齊方式 */
@@ -118,8 +132,9 @@ ul li {
   padding: 10px 4vw 10px 4vw; 
   border-radius: 8px;
   background-color: #ddf4ff; 
-  border: 2px solid #000000; 
   transition: background-color 0.3s, border-color 0.3s; /* 變化過渡效果 */
+  box-shadow: #6594AA 0 0 10px;
+
 }
 
 .radio-group input[type="radio"] {
@@ -147,4 +162,5 @@ ul li {
 #friendRequestsList > li,
 #friendLists > li {
   background-color: #ddf4ff;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
 }
