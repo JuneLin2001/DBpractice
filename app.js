@@ -88,7 +88,6 @@ function createListItem(data, user) {
   const createdTime = data.created_time ? data.created_time.toDate().toLocaleString() : new Date().toLocaleString();
   
   listItem.innerHTML = `
-
     <div class="post-style">
     <p class="title">【${data.title}】<span class="userName">${user ? '作者:' + user.name : "找不到作者"}</span></p>
     <p class="content">${data.content}</p>
@@ -102,18 +101,15 @@ function createListItem(data, user) {
   return listItem;
 }
 
-// Update UI for newly added documents
 async function updateUI(data) {
   const dataList = document.getElementById("dataList");
 
-  // 嘗試根據 email 查找用戶資料
   let user = await getUserByAuthorId(data.author_id);
 
   const listItem = createListItem(data, user);
   dataList.appendChild(listItem);
 }
 
-// Function to update current user info display
 function updateCurrentUserInfo() {
   const emailElement = document.getElementById('currentUserEmail');
   const idElement = document.getElementById('currentUserId');
@@ -128,7 +124,6 @@ function updateCurrentUserInfo() {
   }
 }
 
-// Function to update searched user info display
 function updateSearchedUserInfo(user) {
   const emailElement = document.getElementById('searchUserEmail');
   const idElement = document.getElementById('searchUserId');
@@ -143,7 +138,6 @@ function updateSearchedUserInfo(user) {
   }
 }
 
-// Function to load all data from Firestore
 async function loadAllData(tag = 'all') {
   let q;
   if (tag === 'all') {
@@ -153,16 +147,15 @@ async function loadAllData(tag = 'all') {
     q = query(collection(db, 'posts'), where('tag', '==', tag));
     document.getElementById('dataListTitle').textContent = `${tag}文章一覽`;
   }
-
   const querySnapshot = await getDocs(q);
   const dataList = document.getElementById('dataList');
-  dataList.innerHTML = ''; // Clear existing content
+  dataList.innerHTML = ''; 
 
   for (const doc of querySnapshot.docs) {
     const data = doc.data();
-    const user = await getUserById(data.author_id); // 根據作者 ID 獲取使用者資料
-    const listItem = createListItem(data, user); // 創建列表項
-    dataList.appendChild(listItem); // 顯示列表項
+    const user = await getUserById(data.author_id); 
+    const listItem = createListItem(data, user); 
+    dataList.appendChild(listItem); 
   }
 }
 
@@ -170,12 +163,11 @@ async function loadAllData(tag = 'all') {
 document.querySelectorAll('input[name="tagFilter"]').forEach((radio) => {
   radio.addEventListener('change', (event) => {
     const selectedTag = event.target.value;
-    loadAllData(selectedTag); // Load data based on the selected tag
+    loadAllData(selectedTag); 
   });
 });
 
 
-// Function to send a friend request
 async function sendFriendRequest(toUserId) {
   const id = localStorage.getItem('currentUserId');
   const email = localStorage.getItem('currentUserEmail');
@@ -223,9 +215,6 @@ async function sendFriendRequest(toUserId) {
   }
 }
 
-
-
-// Form submission handler for adding new documents
 document.getElementById('dataForm').addEventListener('submit', async (event) => {
   event.preventDefault(); 
 
@@ -244,14 +233,13 @@ document.getElementById('dataForm').addEventListener('submit', async (event) => 
       title: title,
       content: content,
       tag: tag,
-      author_id: userID, // Only include the author ID
+      author_id: userID, 
       created_time: serverTimestamp(),
     });
 
     console.log("Document written with ID: ", docRef.id);
     alert("資料已送出！");
-    loadAllData(); // Refresh the data view
-
+    loadAllData(); 
   } catch (e) {
     console.error("Error adding document: ", e);
     alert("資料送出失敗！");
@@ -259,7 +247,6 @@ document.getElementById('dataForm').addEventListener('submit', async (event) => 
 });
 
 
-// Function to display received friend requests
 async function displayFriendRequests() {
   const userId = localStorage.getItem('currentUserId');
   if (!userId) return;
@@ -267,7 +254,7 @@ async function displayFriendRequests() {
   const friendRequestsCollection = collection(db, 'users', userId, 'friendRequests');
   const querySnapshot = await getDocs(friendRequestsCollection);
   const friendRequestsList = document.getElementById('friendRequestsList');
-  friendRequestsList.innerHTML = ''; // Clear existing content
+  friendRequestsList.innerHTML = ''; 
 
   querySnapshot.forEach((requestDoc) => {
     const data = requestDoc.data();
@@ -282,7 +269,6 @@ async function displayFriendRequests() {
     `;
     friendRequestsList.appendChild(listItem);
 
-    // Add event listener for the "Accept" button
     listItem.querySelector('.acceptButton').addEventListener('click', () => {
       acceptFriendRequest(requestDoc.id, data.id, data.email, data.name);
     });
@@ -297,7 +283,6 @@ async function acceptFriendRequest(requestDocId, id, email, name) {
   }
 
   try {
-    // Add the friend to the user's friend list
     const userFriendListCollection = collection(db, `users/${userId}/friendList`);
     await setDoc(doc(userFriendListCollection, id), {
       id: id,
@@ -318,10 +303,9 @@ async function acceptFriendRequest(requestDocId, id, email, name) {
     // Remove the friend request
     await deleteDoc(doc(db, 'users', userId, 'friendRequests', requestDocId));
 
-    // Notify the user and update the UI
     alert("已同意好友申請!");
-    displayFriendRequests();  // Refresh the friend requests list
-    displayFriendlist();      // Update the friend list display
+    displayFriendRequests();  
+    displayFriendlist();   
   } catch (e) {
     console.error("Error accepting friend request: ", e);
     alert("Failed to accept friend request.");
@@ -397,23 +381,19 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
     let user = await getUserByEmail(email);
 
     if (user) {
-      // 如果使用者存在，檢查名稱是否相符
       if (user.name === name) {
         alert("登入成功");
         localStorage.setItem('currentUserEmail', user.email);
         localStorage.setItem('currentUserId', user.id);
         localStorage.setItem('currentUserName', user.name);
 
-        // 更新頁面上的使用者資訊
         updateCurrentUserInfo(user);
-        displayFriendRequests();  // 顯示好友請求
+        displayFriendRequests();
         displayFriendlist(); 
       } else {
-        // Name 不符合，登入失敗
         alert("登入失敗!");
       }
     } else {
-      // 使用者不存在，創建新使用者
       const userId = generateCustomId();
       await setDoc(doc(db, 'users', userId), {
         id: userId,
@@ -422,14 +402,12 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
       });
       user = { id: userId, email: email, name: name };
 
-      // 儲存使用者資訊到 localStorage
       localStorage.setItem('currentUserEmail', user.email);
       localStorage.setItem('currentUserId', user.id);
       localStorage.setItem('currentUserName', user.name);
 
-      // 更新頁面上的使用者資訊
       updateCurrentUserInfo(user);
-      displayFriendRequests();  // 顯示好友請求
+      displayFriendRequests();  
     }
   } catch (e) {
     console.error("Error during login: ", e);
@@ -437,22 +415,20 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
   }
 });
 
-// Function to handle search user button click
 document.getElementById('searchUserButton').addEventListener('click', async () => {
   const searchEmail = document.getElementById('searchEmail').value;
   const user = await getUserByEmail(searchEmail);
 
   if (user) {
     updateSearchedUserInfo(user);
-    document.getElementById('sendFriendRequestButton').style.display = 'block'; // Show button
+    document.getElementById('sendFriendRequestButton').style.display = 'block';
   } else {
     alert("未找到該用戶");
     updateSearchedUserInfo({ email: '', id: '', name: '' });
-    document.getElementById('sendFriendRequestButton').style.display = 'none'; // Hide button
+    document.getElementById('sendFriendRequestButton').style.display = 'none'; 
   }
 });
 
-// Function to handle friend request button click
 document.getElementById('sendFriendRequestButton').addEventListener('click', async () => {
   const userId = document.getElementById('searchUserId').textContent.split(': ')[1];
 
