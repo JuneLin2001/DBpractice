@@ -51,6 +51,19 @@ async function getUserByEmail(email) {
   }
 }
 
+async function getUserByAuthorId(authorId) {
+  const q = query(collection(db, 'users'), where('id', '==', authorId));
+  const querySnapshot = await getDocs(q);
+
+  if (!querySnapshot.empty) {
+    const userDoc = querySnapshot.docs[0];
+    return { id: userDoc.id, ...userDoc.data() };
+  } else {
+    console.error("User not found in getUserByAuthorId");
+    return null;
+  }
+}
+
 // Function to get user data by ID
 async function getUserById(userId) {
   try {
@@ -92,7 +105,7 @@ async function updateUI(data) {
   const dataList = document.getElementById("dataList");
 
   // 嘗試根據 email 查找用戶資料
-  let user = await getUserByEmail(data.author_id);
+  let user = await getUserByAuthorId(data.author_id);
 
   const listItem = createListItem(data, user);
   dataList.appendChild(listItem);
@@ -208,7 +221,7 @@ async function sendFriendRequest(toUserId) {
     const alreadyFriend = friendList.includes(toUserId);
 
     if (alreadyFriend) {
-      alert("The user is already in your friend list.");
+      alert("已經是好友了");
       return;
     }
 
@@ -473,12 +486,11 @@ async function listenToPosts() {
     onSnapshot(friendListCollection, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
         if (change.type === "added" || change.type === "removed") {
-          displayFriendlist(); // 更新好友列表
+          displayFriendlist(); 
         }
       });
     });
   }
 }
 
-// Start listening to real-time updates
 listenToPosts();
