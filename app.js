@@ -218,9 +218,9 @@ async function displayFriendRequests() {
     const listItem = document.createElement('li');
     listItem.innerHTML = `
       <form>
-        <p class="fromUserId">發送者 ID: ${data.fromUserId}</p>
-        <p class="fromUserEmail">發送者 Email: ${data.fromUserEmail}</p>
-        <p class="fromUserName">發送者名字: ${data.fromUserName}</p>
+        <p class="fromUserId">發送者 ID: ${data.id}</p>
+        <p class="fromUserEmail">發送者 Email: ${data.email}</p>
+        <p class="fromUserName">發送者名字: ${data.name}</p>
         <button type="button" class="acceptButton">接受</button>  
       </form>
     `;
