@@ -182,7 +182,7 @@ async function sendFriendRequest(toUserId) {
   const name = localStorage.getItem('currentUserName');
 
   if (!id) {
-    alert("Please log in to send friend requests.");
+    alert("請先登入");
     return;
   }
 
@@ -216,7 +216,7 @@ async function sendFriendRequest(toUserId) {
       name: name,
     });
 
-    alert("Friend request sent!");
+    alert("已送出好友請求!");
   } catch (e) {
     console.error("Error sending friend request: ", e);
     alert("Failed to send friend request.");
@@ -292,7 +292,7 @@ async function displayFriendRequests() {
 async function acceptFriendRequest(requestDocId, id, email, name) {
   const userId = localStorage.getItem('currentUserId');
   if (!userId) {
-    alert("User not logged in");
+    alert("尚未登入");
     return;
   }
 
@@ -319,7 +319,7 @@ async function acceptFriendRequest(requestDocId, id, email, name) {
     await deleteDoc(doc(db, 'users', userId, 'friendRequests', requestDocId));
 
     // Notify the user and update the UI
-    alert("Friend request accepted!");
+    alert("已同意好友申請!");
     displayFriendRequests();  // Refresh the friend requests list
     displayFriendlist();      // Update the friend list display
   } catch (e) {
@@ -410,7 +410,7 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
         displayFriendlist(); 
       } else {
         // Name 不符合，登入失敗
-        alert("Name does not match!");
+        alert("登入失敗!");
       }
     } else {
       // 使用者不存在，創建新使用者
@@ -446,7 +446,7 @@ document.getElementById('searchUserButton').addEventListener('click', async () =
     updateSearchedUserInfo(user);
     document.getElementById('sendFriendRequestButton').style.display = 'block'; // Show button
   } else {
-    alert("User not found.");
+    alert("未找到該用戶");
     updateSearchedUserInfo({ email: '', id: '', name: '' });
     document.getElementById('sendFriendRequestButton').style.display = 'none'; // Hide button
   }
@@ -459,7 +459,7 @@ document.getElementById('sendFriendRequestButton').addEventListener('click', asy
   if (userId) {
     await sendFriendRequest(userId);
   } else {
-    alert("No user selected.");
+    alert("沒有找到該用戶");
   }
 });
 
