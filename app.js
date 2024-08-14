@@ -178,11 +178,11 @@ async function loadAllData(tag = 'all') {
 
 // Function to send a friend request
 async function sendFriendRequest(toUserId) {
-  const fromUserId = localStorage.getItem('currentUserId');
-  const fromUserEmail = localStorage.getItem('currentUserEmail');
-  const fromUserName = localStorage.getItem('currentUserName');
+  const id = localStorage.getItem('currentUserId');
+  const email = localStorage.getItem('currentUserEmail');
+  const name = localStorage.getItem('currentUserName');
 
-  if (!fromUserId) {
+  if (!id) {
     alert("Please log in to send friend requests.");
     return;
   }
@@ -192,11 +192,9 @@ async function sendFriendRequest(toUserId) {
 
   try {
     await setDoc(friendRequestRef, {
-      fromUserId: fromUserId,
-      fromUserEmail: fromUserEmail,
-      fromUserName: fromUserName,
-      createdAt: serverTimestamp(),
-      status: 'pending'  // Initial status of the friend request
+      id: id,
+      email: email,
+      name: name,
     });
     alert("Friend request sent!");
   } catch (e) {
@@ -219,43 +217,73 @@ async function displayFriendRequests() {
     const data = requestDoc.data();
     const listItem = document.createElement('li');
     listItem.innerHTML = `
-    <form>
-      <p class="fromUserId">發送者 ID: ${data.fromUserId}</p>
-      <p class="fromUserEmail">發送者 Email: ${data.fromUserEmail}</p>
-      <p class="fromUserName">發送者名字: ${data.fromUserName}</p>
-      <p class="createdAt">請求時間: ${data.createdAt.toDate().toLocaleString()}</p>
-      <button type="button" class="acceptButton">接受</button>  
-    </form>
+      <form>
+        <p class="fromUserId">發送者 ID: ${data.fromUserId}</p>
+        <p class="fromUserEmail">發送者 Email: ${data.fromUserEmail}</p>
+        <p class="fromUserName">發送者名字: ${data.fromUserName}</p>
+        <button type="button" class="acceptButton">接受</button>  
+      </form>
     `;
     friendRequestsList.appendChild(listItem);
 
     // Add event listener for the "Accept" button
-    listItem.querySelector('.acceptButton').addEventListener('click', async () => {
-      try {
-        // Add the friend to the user's friend list in users/{userId}/friendList
-        const friendListCollection = collection(db, `users/${userId}/friendList`);
-        await setDoc(doc(friendListCollection, data.fromUserId), {
-          id: data.fromUserId,
-          email: data.fromUserEmail,
-          name: data.fromUserName
-        });
-
-        // Remove the friend request after accepting
-        await deleteDoc(doc(friendRequestsCollection, requestDoc.id));
-
-        // Optionally, update the UI or notify the user
-        alert("Friend request accepted!");
-
-        // Refresh the friend requests list
-        displayFriendRequests();
-      } catch (e) {
-        console.error("Error accepting friend request: ", e);
-        alert("Failed to accept friend request.");
-      }
+    listItem.querySelector('.acceptButton').addEventListener('click', () => {
+      acceptFriendRequest(requestDoc.id, data.fromUserId, data.fromUserEmail, data.fromUserName);
     });
   });
 }
 
+async function acceptFriendRequest(requestDocId, fromUserId, fromUserEmail, fromUserName) {
+  const userId = localStorage.getItem('currentUserId');
+  if (!userId) {
+    alert("User not logged in");
+    return;
+  }
+
+  try {
+    // Add the friend to the user's friend list
+    const friendListCollection = collection(db, `users/${userId}/friendList`);
+    await setDoc(doc(friendListCollection, fromUserId), {
+      id: fromUserId,
+      email: fromUserEmail,
+      name: fromUserName
+    });
+
+    // Remove the friend request
+    await deleteDoc(doc(db, 'users', userId, 'friendRequests', requestDocId));
+
+    // Notify the user and update the UI
+    alert("Friend request accepted!");
+    displayFriendRequests();  // Refresh the friend requests list
+    displayFriendlist();      // Update the friend list display
+  } catch (e) {
+    console.error("Error accepting friend request: ", e);
+    alert("Failed to accept friend request.");
+  }
+}
+
+
+// Function to display friend list
+async function displayFriendlist() {
+  const id = localStorage.getItem('currentUserId');
+  if (!id) return;
+
+  const friendListCollection = collection(db, 'users', id, 'friendList');
+  const querySnapshot = await getDocs(friendListCollection);
+  const friendLists = document.getElementById('friendLists');
+  friendLists.innerHTML = ''; // Clear existing content
+
+  querySnapshot.forEach((doc) => {
+    const data = doc.data();
+    const listItem = document.createElement('li');
+    listItem.innerHTML = `
+      <p class="friendId">好友 ID: ${data.id}</p>
+      <p class="friendEmail">好友 Email: ${data.email}</p>
+      <p class="friendName">好友名字: ${data.name}</p>
+    `;
+    friendLists.appendChild(listItem); // Append to friendLists
+  });
+}
 
 // Function to handle login form submission
 document.getElementById('loginForm').addEventListener('submit', async (event) => {
@@ -278,6 +306,7 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
         // 更新頁面上的使用者資訊
         updateCurrentUserInfo(user);
         displayFriendRequests();  // 顯示好友請求
+        displayFriendlist(); 
       } else {
         // Name 不符合，登入失敗
         alert("Name does not match!");
@@ -338,8 +367,9 @@ window.addEventListener('load', () => {
   const email = localStorage.getItem('currentUserEmail');
   if (email) {
     loadDataByEmail(email);
-    displayFriendRequests();  // Display friend requests on page load if logged in
-  } else {
+    displayFriendRequests();
+    displayFriendlist();
+    } else {
     loadAllData();
   }
 });
