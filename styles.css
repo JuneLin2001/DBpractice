@@ -33,6 +33,15 @@ h1 {
   margin-bottom: 20px;
 }
 
+.post-style{
+  background: #fff;
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+  margin: auto;
+  margin-bottom: 20px;
+}
+
 form {
   width: 100%;
   margin-bottom: 20px;
@@ -116,6 +125,11 @@ ul li {
     var(--color-accent-subtle, #ddf4ff)
   );
   white-space: nowrap;
+}
+
+.title{
+  font-size: 24px;
+  font-weight: bold; 
 }
 
 .radio-group {

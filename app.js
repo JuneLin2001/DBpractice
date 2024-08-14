@@ -88,14 +88,16 @@ function createListItem(data, user) {
   const createdTime = data.created_time ? data.created_time.toDate().toLocaleString() : new Date().toLocaleString();
   
   listItem.innerHTML = `
-    <p class="id">ID: ${data.id}</p>
-    <p class="title">標題: ${data.title}</p>
-    <p class="author_id">作者 ID: ${data.author_id}</p>
-    <p class="content">內容: ${data.content}</p>
+
+    <div class="post-style">
+    <p class="title">【${data.title}】<span class="userName">${user ? '作者:' + user.name : "找不到作者"}</span></p>
+    <p class="content">${data.content}</p>
+    </div>
+    <p class="id">文章ID: ${data.id}</p>
+    <p class="author_id">作者ID: ${data.author_id}</p>
+    <p class="userEmail">${user ? '作者Email: ' + user.email : '找不到作者Email'}</p>
     <p class="createdTime">創建時間: ${createdTime}</p>
     <p class="tag">${data.tag}</p>
-    <p class="userEmail">${user ? '使用者 Email: ' + user.email : '使用者 Email: 缺失'}</p>
-    <p class="userName">${user ? '使用者名字: ' + user.name : '使用者名字: 缺失'}</p>
   `;
   return listItem;
 }
@@ -112,15 +114,15 @@ async function updateUI(data) {
 }
 
 // Function to update current user info display
-function updateCurrentUserInfo(user) {
+function updateCurrentUserInfo() {
   const emailElement = document.getElementById('currentUserEmail');
   const idElement = document.getElementById('currentUserId');
   const nameElement = document.getElementById('currentUserName');
 
   if (emailElement && idElement && nameElement) {
-    emailElement.textContent = `Email: ${user.email}`;
-    idElement.textContent = `ID: ${user.id}`;
-    nameElement.textContent = `Name: ${user.name}`;
+    emailElement.textContent = `Email: ${localStorage.getItem('currentUserEmail')}`;
+    idElement.textContent = `ID: ${localStorage.getItem('currentUserId')}`;
+    nameElement.textContent = `Name: ${localStorage.getItem('currentUserName')}`;
   } else {
     console.error("One or more current user info elements not found.");
   }
@@ -141,42 +143,20 @@ function updateSearchedUserInfo(user) {
   }
 }
 
-// Function to load data from Firestore based on user email
-async function loadDataByEmail(userEmail) {
-  const user = await getUserByEmail(userEmail);
-  
-  if (user) {
-    // Update current user info on the page
-    updateCurrentUserInfo(user);
-
-    const q = query(collection(db, 'posts'), where('author_id', '==', user.id));
-    const querySnapshot = await getDocs(q);
-    const dataList = document.getElementById('dataList');
-    dataList.innerHTML = ''; // Clear existing content
-
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      updateUI(data);
-    });
-  } else {
-    alert("No posts found for this email.");
-    updateSearchedUserInfo({ email: '', id: '', name: '' }); // Clear user info
-  }
-}
-
 // Function to load all data from Firestore
 async function loadAllData(tag = 'all') {
   let q;
   if (tag === 'all') {
     q = query(collection(db, 'posts'));
+    document.getElementById('dataListTitle').textContent = "文章一覽";
   } else {
     q = query(collection(db, 'posts'), where('tag', '==', tag));
+    document.getElementById('dataListTitle').textContent = `${tag}文章一覽`;
   }
 
   const querySnapshot = await getDocs(q);
   const dataList = document.getElementById('dataList');
   dataList.innerHTML = ''; // Clear existing content
-  document.getElementById('dataListTitle').textContent = "文章一覽";
 
   for (const doc of querySnapshot.docs) {
     const data = doc.data();
@@ -206,7 +186,6 @@ async function sendFriendRequest(toUserId) {
     return;
   }
 
-  // 檢查是否試圖將自己添加為好友
   if (id === toUserId) {
     alert("不能加自己為好友");
     return;
@@ -295,8 +274,8 @@ async function displayFriendRequests() {
     const listItem = document.createElement('li');
     listItem.innerHTML = `
       <form>
-        <p class="fromUserId">發送者 ID: ${data.id}</p>
-        <p class="fromUserEmail">發送者 Email: ${data.email}</p>
+        <p class="fromUserId">發送者ID: ${data.id}</p>
+        <p class="fromUserEmail">發送者Email: ${data.email}</p>
         <p class="fromUserName">發送者名字: ${data.name}</p>
         <button type="button" class="acceptButton">接受</button>  
       </form>
@@ -362,11 +341,11 @@ async function displayFriendlist() {
     const data = doc.data();
     const listItem = document.createElement('li');
     listItem.innerHTML = `
-      <p class="friendId">好友 ID: ${data.id}</p>
-      <p class="friendEmail">好友 Email: ${data.email}</p>
+      <p class="friendId">好友ID: ${data.id}</p>
+      <p class="friendEmail">好友Email: ${data.email}</p>
       <p class="friendName">好友名字: ${data.name}</p>
       <a href= #postlists>
-      <button type="button" class="viewButton" data-friend-name="${data.name}">查看好友全部文章</button>
+      <button type="button" class="viewButton" data-friend-id="${data.id}" data-friend-name="${data.name}">查看好友全部文章</button>
       </a>
       `;
     friendLists.appendChild(listItem); // Append to friendLists
@@ -375,6 +354,7 @@ async function displayFriendlist() {
   // Add event listeners for "viewButton"
   document.querySelectorAll('.viewButton').forEach(button => {
     button.addEventListener('click', (event) => {
+      const friendId = event.target.getAttribute('data-friend-id');
       const friendName = event.target.getAttribute('data-friend-name');
         document.getElementById('dataListTitle').textContent = `${friendName} 的文章一覽`;
         loadPostsByFriendId(friendId); // Load and display friend's posts
@@ -391,6 +371,12 @@ async function loadPostsByFriendId(friendId) {
 
   // Load user information
   const user = await getUserById(friendId);
+
+    if (querySnapshot.empty) {
+    alert("找不到該用戶的文章");
+    loadAllData()
+    return;
+  }
 
   querySnapshot.forEach((doc) => {
     const data = doc.data();
@@ -481,16 +467,15 @@ document.getElementById('sendFriendRequestButton').addEventListener('click', asy
 window.addEventListener('load', () => {
   const email = localStorage.getItem('currentUserEmail');
   if (email) {
-    loadDataByEmail(email);
     displayFriendRequests();
     displayFriendlist();
   }
   loadAllData();
+  updateCurrentUserInfo();
 });
 
 
 async function listenToPosts() {
-  // 監聽文章的變更
   const postsCollection = collection(db, "posts");
   onSnapshot(postsCollection, (snapshot) => {
     snapshot.docChanges().forEach((change) => {
@@ -500,14 +485,13 @@ async function listenToPosts() {
     });
   });
 
-  // 監聽好友請求的變更
   const userId = localStorage.getItem('currentUserId');
   if (userId) {
     const friendRequestsCollection = collection(db, 'users', userId, 'friendRequests');
     onSnapshot(friendRequestsCollection, (snapshot) => {
       snapshot.docChanges().forEach((change) => {
-        if (change.type === "added") {
-          displayFriendRequests(); // 更新好友請求列表
+        if (change.type === "added" || change.type === "removed") {
+          displayFriendRequests();
         }
       });
     });
