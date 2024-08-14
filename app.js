@@ -9,6 +9,7 @@ import {
   query,
   where,
   doc,
+  deleteDoc,
   onSnapshot,
   serverTimestamp,
 } from "https://www.gstatic.com/firebasejs/10.12.5/firebase-firestore.js";
@@ -214,18 +215,47 @@ async function displayFriendRequests() {
   const friendRequestsList = document.getElementById('friendRequestsList');
   friendRequestsList.innerHTML = ''; // Clear existing content
 
-  querySnapshot.forEach((doc) => {
-    const data = doc.data();
+  querySnapshot.forEach((requestDoc) => {
+    const data = requestDoc.data();
     const listItem = document.createElement('li');
     listItem.innerHTML = `
+    <form>
       <p class="fromUserId">發送者 ID: ${data.fromUserId}</p>
       <p class="fromUserEmail">發送者 Email: ${data.fromUserEmail}</p>
       <p class="fromUserName">發送者名字: ${data.fromUserName}</p>
       <p class="createdAt">請求時間: ${data.createdAt.toDate().toLocaleString()}</p>
+      <button type="button" class="acceptButton">接受</button>  
+    </form>
     `;
     friendRequestsList.appendChild(listItem);
+
+    // Add event listener for the "Accept" button
+    listItem.querySelector('.acceptButton').addEventListener('click', async () => {
+      try {
+        // Add the friend to the user's friend list in users/{userId}/friendList
+        const friendListCollection = collection(db, `users/${userId}/friendList`);
+        await setDoc(doc(friendListCollection, data.fromUserId), {
+          id: data.fromUserId,
+          email: data.fromUserEmail,
+          name: data.fromUserName
+        });
+
+        // Remove the friend request after accepting
+        await deleteDoc(doc(friendRequestsCollection, requestDoc.id));
+
+        // Optionally, update the UI or notify the user
+        alert("Friend request accepted!");
+
+        // Refresh the friend requests list
+        displayFriendRequests();
+      } catch (e) {
+        console.error("Error accepting friend request: ", e);
+        alert("Failed to accept friend request.");
+      }
+    });
   });
 }
+
 
 // Function to handle login form submission
 document.getElementById('loginForm').addEventListener('submit', async (event) => {
@@ -237,8 +267,23 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
   try {
     let user = await getUserByEmail(email);
 
-    if (!user) {
-      // If user doesn't exist, create a new user
+    if (user) {
+      // 如果使用者存在，檢查名稱是否相符
+      if (user.name === name) {
+        // Name 符合，登入成功
+        localStorage.setItem('currentUserEmail', user.email);
+        localStorage.setItem('currentUserId', user.id);
+        localStorage.setItem('currentUserName', user.name);
+
+        // 更新頁面上的使用者資訊
+        updateCurrentUserInfo(user);
+        displayFriendRequests();  // 顯示好友請求
+      } else {
+        // Name 不符合，登入失敗
+        alert("Name does not match!");
+      }
+    } else {
+      // 使用者不存在，創建新使用者
       const userId = generateCustomId();
       await setDoc(doc(db, 'users', userId), {
         id: userId,
@@ -246,16 +291,16 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
         name: name
       });
       user = { id: userId, email: email, name: name };
+
+      // 儲存使用者資訊到 localStorage
+      localStorage.setItem('currentUserEmail', user.email);
+      localStorage.setItem('currentUserId', user.id);
+      localStorage.setItem('currentUserName', user.name);
+
+      // 更新頁面上的使用者資訊
+      updateCurrentUserInfo(user);
+      displayFriendRequests();  // 顯示好友請求
     }
-
-    // Save user info to localStorage
-    localStorage.setItem('currentUserEmail', user.email);
-    localStorage.setItem('currentUserId', user.id);
-    localStorage.setItem('currentUserName', user.name);
-
-    // Update current user info on the page
-    updateCurrentUserInfo(user);
-    displayFriendRequests();  // Display friend requests after login
   } catch (e) {
     console.error("Error during login: ", e);
     alert("Login failed!");
