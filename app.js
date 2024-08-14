@@ -46,7 +46,7 @@ async function getUserByEmail(email) {
     const userDoc = querySnapshot.docs[0];
     return { id: userDoc.id, ...userDoc.data() };
   } else {
-    console.error("User not found");
+    console.error("User not found in getUserByEmail");
     return null;
   }
 }
@@ -93,11 +93,6 @@ async function updateUI(data) {
 
   // 嘗試根據 email 查找用戶資料
   let user = await getUserByEmail(data.author_id);
-
-  // 如果用戶資料缺失，根據 ID 查找
-  if (!user) {
-    user = await getUserById(data.author_id);
-  }
 
   const listItem = createListItem(data, user);
   dataList.appendChild(listItem);
@@ -197,21 +192,75 @@ async function sendFriendRequest(toUserId) {
     return;
   }
 
-  const friendRequestId = generateCustomId();
-  const friendRequestRef = doc(db, 'users', toUserId, 'friendRequests', friendRequestId);
-
   try {
+    // 取得當前使用者的好友列表
+    const friendListRef = collection(db, 'users', id, 'friendList');
+    const friendListSnapshot = await getDocs(friendListRef);
+    const friendList = querySnapshot.docs.map(doc => doc.data());
+    console.log("Friend List: ", friendList);
+
+    // 檢查對方是否已經在當前使用者的好友列表中
+    const alreadyFriend = friendListSnapshot.docs.some(doc => doc.id === toUserId);
+
+    if (alreadyFriend) {
+      alert("The user is already in your friend list.");
+      return;
+    }
+    else{
+
+    // 生成好友請求 ID 和引用
+    const friendRequestId = generateCustomId();
+    const friendRequestRef = doc(db, 'users', toUserId, 'friendRequests', friendRequestId);
+
+    // 發送好友請求
     await setDoc(friendRequestRef, {
       id: id,
       email: email,
       name: name,
     });
+
     alert("Friend request sent!");
+  }
+
   } catch (e) {
     console.error("Error sending friend request: ", e);
     alert("Failed to send friend request.");
   }
 }
+
+// Form submission handler for adding new documents
+document.getElementById('dataForm').addEventListener('submit', async (event) => {
+  event.preventDefault(); 
+
+  const title = document.getElementById('title').value;
+  const content = document.getElementById('content').value;
+  const tag = document.getElementById('tag').value;
+
+  const userID = localStorage.getItem('currentUserId');
+
+  try {
+    const customId = generateCustomId();
+    const docRef = doc(db, "posts", customId);
+
+    await setDoc(docRef, {
+      id: customId,
+      title: title,
+      content: content,
+      tag: tag,
+      author_id: userID, // Only include the author ID
+      created_time: serverTimestamp(),
+    });
+
+    console.log("Document written with ID: ", docRef.id);
+    alert("資料已送出！");
+    loadAllData(); // Refresh the data view
+
+  } catch (e) {
+    console.error("Error adding document: ", e);
+    alert("資料送出失敗！");
+  }
+});
+
 
 // Function to display received friend requests
 async function displayFriendRequests() {
@@ -238,12 +287,12 @@ async function displayFriendRequests() {
 
     // Add event listener for the "Accept" button
     listItem.querySelector('.acceptButton').addEventListener('click', () => {
-      acceptFriendRequest(requestDoc.id, data.fromUserId, data.fromUserEmail, data.fromUserName);
+      acceptFriendRequest(requestDoc.id, data.id, data.email, data.name);
     });
   });
 }
 
-async function acceptFriendRequest(requestDocId, fromUserId, fromUserEmail, fromUserName) {
+async function acceptFriendRequest(requestDocId, id, email, name) {
   const userId = localStorage.getItem('currentUserId');
   if (!userId) {
     alert("User not logged in");
@@ -252,11 +301,21 @@ async function acceptFriendRequest(requestDocId, fromUserId, fromUserEmail, from
 
   try {
     // Add the friend to the user's friend list
-    const friendListCollection = collection(db, `users/${userId}/friendList`);
-    await setDoc(doc(friendListCollection, fromUserId), {
-      id: fromUserId,
-      email: fromUserEmail,
-      name: fromUserName
+    const userFriendListCollection = collection(db, `users/${userId}/friendList`);
+    await setDoc(doc(userFriendListCollection, id), {
+      id: id,
+      email: email,
+      name: name
+    });
+
+    // Add the current user to the friend's friend list
+    const friendFriendListCollection = collection(db, `users/${id}/friendList`);
+    const currentUserEmail = localStorage.getItem('currentUserEmail');
+    const currentUserName = localStorage.getItem('currentUserName');
+    await setDoc(doc(friendFriendListCollection, userId), {
+      id: userId,
+      email: currentUserEmail,
+      name: currentUserName
     });
 
     // Remove the friend request
@@ -271,7 +330,6 @@ async function acceptFriendRequest(requestDocId, fromUserId, fromUserEmail, from
     alert("Failed to accept friend request.");
   }
 }
-
 
 // Function to display friend list
 async function displayFriendlist() {
@@ -384,8 +442,8 @@ window.addEventListener('load', () => {
 });
 
 
-// Real-time updates for all posts
-function listenToPosts() {
+async function listenToPosts() {
+  // 監聽文章的變更
   const postsCollection = collection(db, "posts");
   onSnapshot(postsCollection, (snapshot) => {
     snapshot.docChanges().forEach((change) => {
@@ -394,6 +452,28 @@ function listenToPosts() {
       }
     });
   });
+
+  // 監聽好友請求的變更
+  const userId = localStorage.getItem('currentUserId');
+  if (userId) {
+    const friendRequestsCollection = collection(db, 'users', userId, 'friendRequests');
+    onSnapshot(friendRequestsCollection, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added") {
+          displayFriendRequests(); // 更新好友請求列表
+        }
+      });
+    });
+
+    const friendListCollection = collection(db, 'users', userId, 'friendList');
+    onSnapshot(friendListCollection, (snapshot) => {
+      snapshot.docChanges().forEach((change) => {
+        if (change.type === "added" || change.type === "removed") {
+          displayFriendlist(); // 更新好友列表
+        }
+      });
+    });
+  }
 }
 
 // Start listening to real-time updates

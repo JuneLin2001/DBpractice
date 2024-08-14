@@ -114,6 +114,7 @@ ul li {
   align-items: center;
 }
 
-#friendRequestsList > li {
-  background-color: #9ccedd;
+#friendRequestsList > li,
+#friendLists > li {
+  background-color: #ddf4ff;
 }
