@@ -103,16 +103,46 @@ ul li {
   white-space: nowrap;
 }
 
+/* 使整體容器使用 flex 布局並增加間距 */
 .radio-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px; 
+  gap: 15px; /* 增加間距 */
+  margin: 20px 0; /* 上下間距 */
 }
 
+/* 設置 label 的顯示樣式和對齊方式 */
 .radio-group label {
   display: flex;
   align-items: center;
+  padding: 10px 4vw 10px 4vw; 
+  border-radius: 8px;
+  background-color: #ddf4ff; 
+  border: 2px solid #000000; 
+  transition: background-color 0.3s, border-color 0.3s; /* 變化過渡效果 */
 }
+
+.radio-group input[type="radio"] {
+  margin-right: 10px; 
+  display: none; 
+}
+
+/* 當 hover 或 focus 時的樣式 */
+.radio-group label:hover,
+.radio-group label:focus-within {
+  background-color: rgb(159, 225, 255); 
+  border-color: #999; 
+  cursor: pointer; 
+}
+
+/* 選中狀態的樣式 */
+.radio-group input[type="radio"]:checked + span {
+  font-weight: bold; 
+}
+
+.radio-group label {
+  color: #000000; 
+}B
 
 #friendRequestsList > li,
 #friendLists > li {
