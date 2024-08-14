@@ -192,21 +192,25 @@ async function sendFriendRequest(toUserId) {
     return;
   }
 
+  // 檢查是否試圖將自己添加為好友
+  if (id === toUserId) {
+    alert("不能加自己為好友");
+    return;
+  }
+
   try {
     // 取得當前使用者的好友列表
     const friendListRef = collection(db, 'users', id, 'friendList');
     const friendListSnapshot = await getDocs(friendListRef);
-    const friendList = querySnapshot.docs.map(doc => doc.data());
-    console.log("Friend List: ", friendList);
+    const friendList = friendListSnapshot.docs.map(doc => doc.id);
 
     // 檢查對方是否已經在當前使用者的好友列表中
-    const alreadyFriend = friendListSnapshot.docs.some(doc => doc.id === toUserId);
+    const alreadyFriend = friendList.includes(toUserId);
 
     if (alreadyFriend) {
       alert("The user is already in your friend list.");
       return;
     }
-    else{
 
     // 生成好友請求 ID 和引用
     const friendRequestId = generateCustomId();
@@ -220,13 +224,13 @@ async function sendFriendRequest(toUserId) {
     });
 
     alert("Friend request sent!");
-  }
-
   } catch (e) {
     console.error("Error sending friend request: ", e);
     alert("Failed to send friend request.");
   }
 }
+
+
 
 // Form submission handler for adding new documents
 document.getElementById('dataForm').addEventListener('submit', async (event) => {
@@ -366,7 +370,7 @@ document.getElementById('loginForm').addEventListener('submit', async (event) =>
     if (user) {
       // 如果使用者存在，檢查名稱是否相符
       if (user.name === name) {
-        // Name 符合，登入成功
+        alert("登入成功");
         localStorage.setItem('currentUserEmail', user.email);
         localStorage.setItem('currentUserId', user.id);
         localStorage.setItem('currentUserName', user.name);
