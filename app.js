@@ -159,7 +159,6 @@ async function loadDataByEmail(userEmail) {
 // Function to load all data from Firestore
 async function loadAllData(tag = 'all') {
   let q;
-
   if (tag === 'all') {
     q = query(collection(db, 'posts'));
   } else {
@@ -170,11 +169,22 @@ async function loadAllData(tag = 'all') {
   const dataList = document.getElementById('dataList');
   dataList.innerHTML = ''; // Clear existing content
 
-  querySnapshot.forEach((doc) => {
+  for (const doc of querySnapshot.docs) {
     const data = doc.data();
-    updateUI(data);
-  });
+    const user = await getUserById(data.author_id); // 根據作者 ID 獲取使用者資料
+    const listItem = createListItem(data, user); // 創建列表項
+    dataList.appendChild(listItem); // 顯示列表項
+  }
 }
+
+// Event listener for the tag filter radio buttons
+document.querySelectorAll('input[name="tagFilter"]').forEach((radio) => {
+  radio.addEventListener('change', (event) => {
+    const selectedTag = event.target.value;
+    loadAllData(selectedTag); // Load data based on the selected tag
+  });
+});
+
 
 // Function to send a friend request
 async function sendFriendRequest(toUserId) {
@@ -369,10 +379,10 @@ window.addEventListener('load', () => {
     loadDataByEmail(email);
     displayFriendRequests();
     displayFriendlist();
-    } else {
-    loadAllData();
   }
+  loadAllData();
 });
+
 
 // Real-time updates for all posts
 function listenToPosts() {
