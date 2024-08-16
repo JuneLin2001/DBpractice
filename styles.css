@@ -1,10 +1,10 @@
-html {   
-  scroll-behavior: smooth;   
-}   
-  
-:root {   
-  scroll-padding-top: 30px;   
-}   
+html {
+  scroll-behavior: smooth;
+}
+
+:root {
+  scroll-padding-top: 30px;
+}
 
 body {
   background-color: #f7f7f7;
@@ -33,7 +33,7 @@ h1 {
   margin-bottom: 20px;
 }
 
-.post-style{
+.post-style {
   background: #fff;
   padding: 20px;
   border-radius: 8px;
@@ -53,7 +53,9 @@ label {
   color: #555;
 }
 
-input, textarea, select {
+input,
+textarea,
+select {
   width: 100%;
   padding: 10px;
   margin-bottom: 15px;
@@ -71,7 +73,7 @@ textarea {
 button {
   width: 100%;
   padding: 12px;
-  background-color: #007BFF;
+  background-color: #007bff;
   color: white;
   border: none;
   border-radius: 4px;
@@ -127,51 +129,50 @@ ul li {
   white-space: nowrap;
 }
 
-.title{
+.title {
   font-size: 24px;
-  font-weight: bold; 
+  font-weight: bold;
 }
 
 .radio-group {
   display: flex;
   flex-wrap: wrap;
-  gap: 15px; 
-  margin: 20px 0; 
+  gap: 15px;
+  margin: 20px 0;
 }
 
 /* 設置 label 的顯示樣式和對齊方式 */
 .radio-group label {
   display: flex;
   align-items: center;
-  padding: 10px 4vw 10px 4vw; 
+  padding: 10px 4vw 10px 4vw;
   border-radius: 8px;
-  background-color: #ddf4ff; 
+  background-color: #ddf4ff;
   transition: background-color 0.3s, border-color 0.3s; /* 變化過渡效果 */
-  box-shadow: #6594AA 0 0 10px;
-
+  box-shadow: #6594aa 0 0 10px;
 }
 
 .radio-group input[type="radio"] {
-  margin-right: 10px; 
-  display: none; 
+  margin-right: 10px;
+  display: none;
 }
 
 /* 當 hover 或 focus 時的樣式 */
 .radio-group label:hover,
 .radio-group label:focus-within {
-  background-color: rgb(159, 225, 255); 
-  border-color: #999; 
-  cursor: pointer; 
+  background-color: rgb(159, 225, 255);
+  border-color: #999;
+  cursor: pointer;
 }
 
 /* 選中狀態的樣式 */
 .radio-group input[type="radio"]:checked + span {
-  font-weight: bold; 
+  font-weight: bold;
 }
 
 .radio-group label {
-  color: #000000; 
-}B
+  color: #000000;
+}
 
 #friendRequestsList > li,
 #friendLists > li {

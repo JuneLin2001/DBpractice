@@ -85,6 +85,7 @@ async function getUserById(userId) {
 // Create a function to generate HTML for a list item
 function createListItem(data, user) {
   const listItem = document.createElement("li");
+  listItem.innerHTML = "";
   const createdTime = data.created_time ? data.created_time.toDate().toLocaleString() : new Date().toLocaleString();
   
   listItem.innerHTML = `
@@ -94,7 +95,7 @@ function createListItem(data, user) {
     </div>
     <p class="id">文章ID: ${data.id}</p>
     <p class="author_id">作者ID: ${data.author_id}</p>
-    <p class="userEmail">${user ? '作者Email: ' + user.email : '找不到作者Email'}</p>
+    <p class="userEmail">${user ? '作者Email: ' + user.email : '找不到作者的Email'}</p>
     <p class="createdTime">創建時間: ${createdTime}</p>
     <p class="tag">${data.tag}</p>
   `;
@@ -103,9 +104,7 @@ function createListItem(data, user) {
 
 async function updateUI(data) {
   const dataList = document.getElementById("dataList");
-
   let user = await getUserByAuthorId(data.author_id);
-
   const listItem = createListItem(data, user);
   dataList.appendChild(listItem);
 }
@@ -260,14 +259,13 @@ async function displayFriendRequests() {
     const data = requestDoc.data();
     const listItem = document.createElement('li');
     listItem.innerHTML = `
-      <form>
         <p class="fromUserId">發送者ID: ${data.id}</p>
         <p class="fromUserEmail">發送者Email: ${data.email}</p>
         <p class="fromUserName">發送者名字: ${data.name}</p>
         <button type="button" class="acceptButton">接受</button>  
-      </form>
     `;
     friendRequestsList.appendChild(listItem);
+    console.log(listItem);
 
     listItem.querySelector('.acceptButton').addEventListener('click', () => {
       acceptFriendRequest(requestDoc.id, data.id, data.email, data.name);
@@ -443,10 +441,8 @@ document.getElementById('sendFriendRequestButton').addEventListener('click', asy
 window.addEventListener('load', () => {
   const email = localStorage.getItem('currentUserEmail');
   if (email) {
-    displayFriendRequests();
     displayFriendlist();
   }
-  loadAllData();
   updateCurrentUserInfo();
 });
 
